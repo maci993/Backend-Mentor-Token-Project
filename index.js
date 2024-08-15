@@ -9,6 +9,12 @@ const {
   register,
   refreshToken,
   resetPassword,
+  forgotPassword,
+  createUser,
+  getOneUser,
+  getAllUsers,
+  getBestPerformingMentors,
+  // getAllMentors,
 } = require("./handlers/auth");
 
 const {
@@ -21,6 +27,7 @@ const {
 
   const {
     getAllJobApplications,
+    getOneJobApplication,
     createJobApplication,
     updateJobApplication,
     removeJobApplication,
@@ -44,25 +51,49 @@ app.use(
       "/api/auth/register",
       "/api/auth/forgot-password",
       "/api/auth/reset-password",
+      "/api/best-performing-mentors", 
     ],
   })
 );
 
-app.post("/api/auth/login", login);
+app.post("/api/jobs/apply/:id", async (req, res) => {
+  console.log("Request params:", req.params);
+  const jobId = req.params.id;
+
+  try {
+      const application = await createJobApplication(jobId);
+      res.status(200).json({ message: "Application submitted successfully", application });
+  } catch (error) {
+      console.error("Error applying to job:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+app.post("/api/auth/login", login);//raboti
+app.post("/api/auth/register", register);//raboti
 app.get("/api/auth/refresh-token", refreshToken);
-app.post("/api/auth/register", register);
-app.post("/api/auth/reset-password", resetPassword);
+app.post("/api/auth/reset-password", resetPassword);//raboti
+app.post('/api/forgot-password', forgotPassword);//raboti
+app.post('/api/users', createUser);//raboti
+app.get('/api/users/:id', getOneUser);//raboti
+app.get('/api/users', getAllUsers);//raboti
+app.get("/api/best-performing-mentors", getBestPerformingMentors)
+// app.get("/api/mentors", getAllMentors);
 
-app.get("/api/jobs", getAll);
-app.get("/api/jobs/:id", getJobsById);
-app.post("/api/jobs", createJobs);
-app.put("/api/jobs/:id", updateJobs);
-app.delete("/api/jobs/:id", removeJobs);
+app.post("/api/jobs", createJobs);//raboti
+app.get("/api/jobs", getAll);//raboti
+app.get("/api/jobs/:id", getJobsById);//raboti
+app.put("/api/jobs/:id", updateJobs);// raboti
+app.delete("/api/jobs/:id", removeJobs);//ne raboti
 
-app.get("/api/jobapplications", getAllJobApplications);
-app.post("/api/jobapplications", createJobApplication);
-app.put("/api/jobapplications", updateJobApplication);
-app.delete("/api/jobapplication/:id", removeJobApplication);
+
+app.post("/api/jobapplications", createJobApplication);//raboti
+app.get("/api/jobapplications", getAllJobApplications);//raboti
+app.get("/api/jobapplication/:id", getOneJobApplication);//raboti
+app.put("/api/jobapplications/:id", updateJobApplication);//raboti
+app.delete("/api/jobapplication/:id", removeJobApplication);//raboti
+
+
 
 
 // app.use((err, req, res, next) => {

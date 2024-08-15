@@ -76,7 +76,13 @@ const create = async (acc) => {
 };
 
 const getById = async (id) => {
-  return await Account.findOne({ _id: id });
+  // return await Account.findOne({ _id: id });
+  try {
+    return await Account.findById(id);
+  } catch (error) {
+    console.error("Error in getById:", error);
+    throw error;
+  }
 };
 
 const getByEmail = async (email) => {
@@ -84,12 +90,14 @@ const getByEmail = async (email) => {
 };
 
 const setNewPassword = async (id, password) => {
-  return await Account.updateOne({ _id: id, password });
+  return await Account.updateOne({ _id: id, password }, { new: true});
 };
 
-const getAll = async () => {
-  return await Account.find({});
-};
+// const getAll = async () => {
+//   return await Account.find({});
+// };
+
+const getAll = async (filter = {}) => { return await Account.find(filter); };
 
 const update = async (id, acc) => {
   return await Account.updateOne({ _id: id }, acc);
@@ -99,6 +107,21 @@ const remove = async (id) => {
   return await Account.deleteOne({ _id: id });
 };
 
+// const getMentors = async () => {
+//   try {
+//     const mentors = await Account.find({ type: "mentor" });
+//     const sanitizedMentors = mentors.map(mentor => ({
+//       ...mentor.toObject(),
+//       status: mentor.status || 'No Status Available', // Fallback in case status is undefined
+//     }));
+
+//     return sanitizedMentors;
+//   } catch (err) {
+//     console.error("Error fetching mentors:", err);
+//     res.status(500).json({ message: "Internal Server Error" });
+//   }
+// };
+
 module.exports = {
   create,
   getById,
@@ -107,4 +130,5 @@ module.exports = {
   getAll,
   update,
   remove,
+  // getMentors,
 };

@@ -1,14 +1,15 @@
 const { createJob, getAllJobs, getJobById, updateJob, removeJob } = require("../pkg/Job/index");
 
+const { createApplication } = require ('../pkg/jobApplication/index')
 const { getSection } = require("../pkg/config");
 
-const getAll = async (req, res) => {
+const createJobs = async (req, res) => {
   try {
-    const jobs = await getAllJobs();
-    res.status(200).send(jobs);
+    const newJob = await createJob(req.body);
+    return res.status(200).send(newJob);
   } catch (err) {
-    console.log(err);
-    res.status(500).send("Internal Server Error!");
+    console.error("Error creating job:", err);
+    return res.status(500).send("Internal Server Error");
   }
 };
 
@@ -22,10 +23,10 @@ const getJobsById = async (req, res) => {
   }
 };
 
-const createJobs = async (req, res) => {
+const getAll = async (req, res) => {
   try {
-    await createJob(req.body);
-    res.status(201).send("Job created!");
+    const jobs = await getAllJobs();
+    res.status(200).send(jobs);
   } catch (err) {
     console.log(err);
     res.status(500).send("Internal Server Error!");
@@ -34,21 +35,47 @@ const createJobs = async (req, res) => {
 
 const updateJobs = async (req, res) => {
   try {
-    await updateJob(req.params.id, req.body);
-    res.status(204).send(`Job updated: ${req.params.id}`);
+    const updatedJobs = await updateJob(req.params.id, req.body);
+    if (!updatedJobs) {
+      return res.status(404).send("Job not found");
+    }
+    return res.status(200).send(updatedJobs);
   } catch (err) {
-    console.log(err);
-    res.status(500).send("Internal Server Error!");
+    console.error("Error updating Job:", err);
+    return res.status(500).send("Internal Server Error");
   }
 };
 
 const removeJobs = async (req, res) => {
   try {
-    await removeJob(req.params.id);
-    res.status(204).send(`Job deleted: ${req.params.id}`);
+    const deletedJob = await removeJob(req.params.id);
+    if (!deletedJob) {
+      return res.status(404).send("Job not found");
+    }
+    return res.status(200).send("Job deleted successfully");
   } catch (err) {
-    console.log(err);
-    res.status(500).send("Internal Server Error!");
+    return res.status(500).send("Internal Server Error");
+  }
+};
+
+const applyToJob = async (req, res) => {
+  try {
+    const jobId = req.params.id;
+    const userId = req.user.id; 
+
+    const applicationData = {
+      jobId: jobId,
+      mentorId: userId,
+      companyId: req.body.companyId, 
+      status: "pending", 
+      acceptedStatus: "in progress", 
+    };
+
+    const newApplication = await createApplication(applicationData);
+    res.status(200).json(newApplication);
+  } catch (err) {
+    console.error("Error applying to job:", err);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -58,4 +85,5 @@ module.exports = {
   createJobs,
   updateJobs,
   removeJobs,
+  applyToJob,
 };

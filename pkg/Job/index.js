@@ -4,8 +4,7 @@ const JobSchema = mongoose.Schema(
   {
     companyId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User", 
-      required: true,
+      ref: "Account", 
     },
     title: {
       type: String,
@@ -36,16 +35,16 @@ const createJob = async (data) => {
   };
   
   const getAllJobs = async () => {
-    return await Job.find({});
+    return await Job.find({}).populate('companyId', 'name');;
   };
   
   const getJobById = async (id) => {
-    return await Job.findOne({ _id: id });
+    return await Job.findOne({ _id: id }).populate('companyId', 'name');;
   };
   
   const updateJob = async (id, data) => {
     data.updated_at = new Date();
-    return await Job.updateOne(id, data, { new: true });
+    return await Job.findByIdAndUpdate(id, data, { new: true });
   };
   
   const removeJob = async (id) => {
