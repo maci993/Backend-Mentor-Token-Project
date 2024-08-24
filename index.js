@@ -13,8 +13,12 @@ const {
   createUser,
   getOneUser,
   getAllUsers,
+  updateAccount,
+  getAllMentors,
+  getAllCompanies,
+  getCompanyAccomplishments,
+  getMentorAccomplishments,
   getBestPerformingMentors,
-  // getAllMentors,
 } = require("./handlers/auth");
 
 const {
@@ -23,6 +27,9 @@ const {
     createJobs,
     updateJobs,
     removeJobs,
+    offerJob,
+    deleteJobOffer,
+    updateJobStatus,
   } = require("./handlers/job");
 
   const {
@@ -77,7 +84,7 @@ app.post('/api/forgot-password', forgotPassword);//raboti
 app.post('/api/users', createUser);//raboti
 app.get('/api/users/:id', getOneUser);//raboti
 app.get('/api/users', getAllUsers);//raboti
-app.get("/api/best-performing-mentors", getBestPerformingMentors)
+app.put("/api/auth/:id", updateAccount);
 // app.get("/api/mentors", getAllMentors);
 
 app.post("/api/jobs", createJobs);//raboti
@@ -93,13 +100,15 @@ app.get("/api/jobapplication/:id", getOneJobApplication);//raboti
 app.put("/api/jobapplications/:id", updateJobApplication);//raboti
 app.delete("/api/jobapplication/:id", removeJobApplication);//raboti
 
+app.get("/api/mentors", getAllMentors);
+app.get("/api/companies", getAllCompanies);
+app.get("/api/company/accomplishments", getCompanyAccomplishments);
+app.get("/api/mentor/accomplishments", getMentorAccomplishments);
+app.get("/api/best-performing-mentors", getBestPerformingMentors)
+app.post("/api/offer-job", offerJob);
+app.delete("/api/jobs/:id", deleteJobOffer);
+app.put("/api/jobs/:jobId", updateJobStatus);
 
-
-
-// app.use((err, req, res, next) => {
-//   console.error(err.stack);
-//   res.status(500).send('Something broke!');
-// });
 
 app.listen(getSection("development").port, () => {
     console.log(`Server started at port ${getSection("development").port}`);

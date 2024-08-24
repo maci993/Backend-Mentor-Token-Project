@@ -24,12 +24,14 @@ const ApplicationSchema = mongoose.Schema(
     },
     status: {
       type: String,
+      enum: ["pending", "accepted", "rejected"],
       default: "pending",
       required: true,
     },
     acceptedStatus: {
       type: String,
       enum: ["done", "rejected", "in progress"],
+      default: "in progress",
       required: true,
     },
   },

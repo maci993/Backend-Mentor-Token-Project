@@ -64,6 +64,14 @@ const accountSchema = mongoose.Schema(
           return this.type === "startup";
         },
       },
+      mentorAccomplishments: {
+        completedJobs: { type: Number, default: 0 },
+        rating: { type: Number, default: 0 },
+      },
+      companyAccomplishments: {
+        totalJobsPosted: { type: Number, default: 0 },
+        successfulMentorEngagements: { type: Number, default: 0 },
+      },
     },
     { timestamps: true }
   );
@@ -107,20 +115,6 @@ const remove = async (id) => {
   return await Account.deleteOne({ _id: id });
 };
 
-// const getMentors = async () => {
-//   try {
-//     const mentors = await Account.find({ type: "mentor" });
-//     const sanitizedMentors = mentors.map(mentor => ({
-//       ...mentor.toObject(),
-//       status: mentor.status || 'No Status Available', // Fallback in case status is undefined
-//     }));
-
-//     return sanitizedMentors;
-//   } catch (err) {
-//     console.error("Error fetching mentors:", err);
-//     res.status(500).json({ message: "Internal Server Error" });
-//   }
-// };
 
 module.exports = {
   create,
@@ -130,5 +124,6 @@ module.exports = {
   getAll,
   update,
   remove,
+  Account,
   // getMentors,
 };

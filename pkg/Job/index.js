@@ -23,6 +23,10 @@ const JobSchema = mongoose.Schema(
       enum: ["Direct", "Open"],
       required: true,
     },
+    finishedDate: {
+      type: Date,
+      default: Date.now,
+    }
   },
   { timestamps: true }
 );

@@ -9,9 +9,10 @@ const {
   update,
   remove,
   getById,
+  Account,
   // getMentors,
 } = require("../pkg/account");
-
+console.log(Account);
 const {
   validate,
   AccountLogin,
@@ -189,28 +190,48 @@ const getAllUsers = async (req, res) => {
   }
 };
 
-// const getMentors = async (req, res) => {
-//   try {
-//     const mentors = await Account.find({ type: "mentor" });
-//     res.status(200).send(mentors);
-//   } catch (err) {
-//     console.error("Error fetching mentors:", err);
-//     res.status(500).json({ message: "Internal Server Error" });
-//   }
-// };
-
-const updateAccount = async (req, res) => {
+const getAllMentors = async (req, res) => {
   try {
-    const account = await update(req.params.id, req.body);
-    if (!account) {
-      return res.status(404).send("User not found!");
-    }
-    res.status(200).send(account);
+    const mentors = await getAll({ type: "mentor" });
+    res.status(200).send(mentors);
   } catch (err) {
+    console.error("Error fetching mentors:", err);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+const getAllCompanies = async (req, res) => {
+  try {
+    const companies = await getAll({ type: "startup" });
+    res.status(200).send(companies);
+  } catch (err) {
+    console.error("Error fetching companies:", err);
     res.status(500).send("Internal Server Error");
   }
 };
 
+const updateAccount = async (req, res) => {
+  try {
+    // console.log("Updating user with ID:", req.params.id);
+    // console.log("Updated data:", req.body);
+
+    const userId = req.params.id;
+    const updatedData = req.body;
+
+    const updatedUser = await Account.findByIdAndUpdate(userId, updatedData, {
+      new: true,
+    });
+
+    if (!updatedUser) {
+      return res.status(404).send("User not found!");
+    }
+    // console.log("User after update:", updatedUser);
+    res.status(200).send(updatedUser);
+  } catch (err) {
+    console.error("Error updating user information:", err);
+    res.status(500).send("Internal Server Error");
+  }
+};
 const deleteAccount = async (req, res) => {
   try {
     const account = await remove(req.params.id);
@@ -223,51 +244,69 @@ const deleteAccount = async (req, res) => {
   }
 };
 
-const getBestPerformingMentors = async (req, res) => {
+const getCompanyAccomplishments = async (req, res) => {
   try {
-    const lastMonth = new Date();
-    lastMonth.setMonth(lastMonth.getMonth() - 1);
+    const companyAccomplishments = await Account.findOne(
+      { _id: req.user.id, type: "startup" },
+      "companyAccomplishments"
+    );
 
-    const mentors = await Account.aggregate([
-      { $match: { type: "mentor" } },
-      {
-        $lookup: {
-          from: "jobs",
-          localField: "acceptedJobs",
-          foreignField: "_id",
-          as: "jobs",
-        },
-      },
-      { $unwind: "$jobs" },
-      { $match: { "jobs.completedAt": { $gte: lastMonth } } },
-      {
-        $group: {
-          _id: "$_id",
-          name: { $first: "$name" },
-          email: { $first: "$email" },
-          achievedJobs: { $sum: 1 },
-        },
-      },
-      { $sort: { achievedJobs: -1 } },
-      { $limit: 3 },
-    ]);
+    if (!companyAccomplishments) {
+      return res
+        .status(404)
+        .json({ message: "Company accomplishments not found" });
+    }
 
-    res.status(200).json(mentors);
+    res.status(200).json(companyAccomplishments.companyAccomplishments);
   } catch (err) {
-    console.error("Error fetching best-performing mentors:", err);
-    res.status(500).json({ message: "Internal Server Error", error: err });
+    console.error("Error fetching company accomplishments:", err);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
-// const getAllMentors = async (req, res) => {
-//   try {
-//     const mentors = await getMentors();
-//     res.status(200).send(mentors);
-//   } catch (err) {
-//     console.error("Error fetching mentors:", err);
-//     res.status(500).send("Internal Server Error");
-//   }
-// };
+const getMentorAccomplishments = async (req, res) => {
+  try {
+    const mentorAccomplishments = await Account.findOne(
+      { _id: req.user.id, type: "mentor" },
+      "mentorAccomplishments"
+    );
+
+    if (!mentorAccomplishments) {
+      return res
+        .status(404)
+        .json({ message: "Mentor accomplishments not found" });
+    }
+
+    res.status(200).json(mentorAccomplishments.mentorAccomplishments);
+  } catch (err) {
+    console.error("Error fetching mentor accomplishments:", err);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+const getBestPerformingMentors = async (rew, res) => {
+  try {
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+
+    const mentors = await getAll({
+      type: "mentor",
+      "mentorAccomplishments.completedJobs": { $gt: 0 },
+      updatedAt: { $gte: oneMonthAgo },
+    });
+    const sortedMentors = mentors
+      .map((mentor) => ({
+        ...mentor.toObject(),
+        completedJobs: mentor.mentorAccomplishments.completedJobs,
+      }))
+      .sort((a, b) => b.completedJobs - a.completedJobs)
+      .slice(0, 3);
+    res.status(200).json(sortedMentors);
+  } catch (error) {
+    console.error(" Error fetching best performing mentors", error);
+    res.status(500).json({ message: "internal server Error" });
+  }
+};
 
 module.exports = {
   login,
@@ -280,6 +319,9 @@ module.exports = {
   getAllUsers,
   updateAccount,
   deleteAccount,
+  getAllMentors,
+  getAllCompanies,
+  getMentorAccomplishments,
+  getCompanyAccomplishments,
   getBestPerformingMentors,
-// getAllMentors,
 };
