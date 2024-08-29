@@ -40,6 +40,8 @@ const {
     removeJobApplication,
   } = require("./handlers/application");
 
+  const { getStartupStatistics, getMentorStatistics } = require("./handlers/overviewHandler");
+
 require("./pkg/db");
 
 const app = express();
@@ -109,7 +111,8 @@ app.post("/api/offer-job", offerJob);
 app.delete("/api/jobs/:id", deleteJobOffer);
 app.put("/api/jobs/:jobId", updateJobStatus);
 
-
+app.get("/api/overview-stats", getStartupStatistics)
+app.get("/api/overview-stats-mentors", getMentorStatistics)
 app.listen(getSection("development").port, () => {
     console.log(`Server started at port ${getSection("development").port}`);
   });

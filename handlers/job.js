@@ -21,7 +21,7 @@ const createJobs = async (req, res) => {
 
 const getJobsById = async (req, res) => {
   try {
-    const job = await getJobById(id).populate('companyId', 'name');
+    const job = await getJobById(id).populate('companyId', 'name', 'mentor', 'company');
     res.status(200).send(job);
   } catch (err) {
     console.log(err);

@@ -246,18 +246,24 @@ const deleteAccount = async (req, res) => {
 
 const getCompanyAccomplishments = async (req, res) => {
   try {
-    const companyAccomplishments = await Account.findOne(
-      { _id: req.user.id, type: "startup" },
-      "companyAccomplishments"
-    );
+    const currentDate = new Date();
+    const oneYearAgo = new Date(currentDate);
+    oneYearAgo.setFullYear(currentDate.getFullYear() - 1);
 
-    if (!companyAccomplishments) {
-      return res
-        .status(404)
-        .json({ message: "Company accomplishments not found" });
-    }
+    // Find jobs that were finished in the last year by this company
+    const finishedJobs = await Job.find({
+      companyId: req.user.id, 
+      status: "finished", 
+      finishedDate: { $gte: oneYearAgo, $lte: currentDate },
+    });
 
-    res.status(200).json(companyAccomplishments.companyAccomplishments);
+
+    const finishedJobsCount = finishedJobs.length;
+
+    res.status(200).json({
+      totalFinishedJobs: finishedJobsCount,
+      finishedJobs: finishedJobs,
+    });
   } catch (err) {
     console.error("Error fetching company accomplishments:", err);
     res.status(500).json({ message: "Internal Server Error" });
@@ -279,8 +285,8 @@ const getMentorAccomplishments = async (req, res) => {
 
     res.status(200).json(mentorAccomplishments.mentorAccomplishments);
   } catch (err) {
-    console.error("Error fetching mentor accomplishments:", err);
-    res.status(500).json({ message: "Internal Server Error" });
+    console.error("Error fetching mentor accomplishments:", err); // Log the error
+    res.status(500).json({ message: "Internal Server Error", error: err.message }); // Send error details
   }
 };
 

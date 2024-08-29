@@ -61,5 +61,6 @@ const createJob = async (data) => {
     getJobById,
     updateJob,
     removeJob,
+    Job,
   };
   
