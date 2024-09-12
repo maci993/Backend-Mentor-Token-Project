@@ -54,8 +54,33 @@ const login = async (req, res) => {
 
 const register = async (req, res) => {
   try {
+    console.log("Received data:", req.body);
+    const { email, password, confirmPassword, name, type, skills, phone, desc, representative, address } = req.body;
     await validate(req.body, AccountRegister);
-    const { email, password, confirmPassword, fullName } = req.body;
+    // console.log("Received data:", req.body);
+    // console.log("Missing fields:", {
+    //   email: !email,
+    //   password: !password,
+    //   name: !name,
+    //   type: !type,
+    //   skills: !skills,
+    //   phone: !phone,
+    //   desc: !desc
+    // });
+    
+    if (!email || !password || !confirmPassword || !name || !type) {
+      console.log("Missing basic fields:", { email, password, confirmPassword, name, type });
+      return res.status(400).send("All fields are required!");
+    }
+
+    if (type === "mentor" && (!skills || !phone || !desc)) {
+      return res.status(400).send("Mentor-specific fields are required!");
+    }
+
+    if (type === "startup" && (!representative || !address)) {
+      return res.status(400).send("Startup-specific fields are required!");
+    }
+
     const exists = await getByEmail(email);
 
     if (exists) {
@@ -68,6 +93,7 @@ const register = async (req, res) => {
         .send("Confirm password is not the same as password!");
     }
     req.body.password = bcrypt.hashSync(password); // password-ot e sifriran i e nerazbirliv za nas lugjeto
+    
     const acc = await create(req.body);
     return res.status(201).send(acc);
   } catch (err) {
@@ -271,7 +297,7 @@ const getCompanyAccomplishments = async (req, res) => {
 };
 
 const getMentorAccomplishments = async (req, res) => {
-  try {
+   try {
     const mentorAccomplishments = await Account.findOne(
       { _id: req.user.id, type: "mentor" },
       "mentorAccomplishments"

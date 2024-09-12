@@ -3,12 +3,14 @@ const { Job } = require("../pkg/Job/index");
 const { Application } = require("../pkg/jobApplication/index");
 
 const getStartupStatistics = async (req, res) => {
+  const oneMonthAgo = new Date().getTime() - 30 * 24 * 60 * 60 * 1000;
   try {
     const jobs = await Job.find({
       updatedAt: { $gte: oneMonthAgo },
       status: { $in: ["Direct", "Open"] }
     });
-    const oneMonthAgo = new Date().getTime() - 30 * 24 * 60 * 60 * 1000;
+    console.log("JOBS FROM BACKEND", jobs);
+
     const totalJobs = jobs.length;
 
     const totalAssignedJobs = jobs.filter(
@@ -45,6 +47,11 @@ try {
   
 const mentors = await Account.find({ type: "mentor" });
 const totalMentors = mentors.length;
+
+const jobs = await Job.find({
+  updatedAt: { $gte: oneMonthAgo },
+  status: { $in: ["Direct", "Open"] }
+});
 
 const totalAssignedJobs = jobs.filter(
   (job) =>

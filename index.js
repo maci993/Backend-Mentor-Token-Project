@@ -80,6 +80,7 @@ app.post("/api/jobs/apply/:id", async (req, res) => {
 
 app.post("/api/auth/login", login);//raboti
 app.post("/api/auth/register", register);//raboti
+// console.log("Received DATA", req.body);
 app.get("/api/auth/refresh-token", refreshToken);
 app.post("/api/auth/reset-password", resetPassword);//raboti
 app.post('/api/forgot-password', forgotPassword);//raboti

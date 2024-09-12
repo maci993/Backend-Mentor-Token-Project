@@ -6,11 +6,11 @@ const AccountLogin = {
 };
 
 const AccountRegister = {
-    name: "required|string",
-  email: "required|email",
+  name: "required|string",
+  email: "required|string",
   password: "required|string",
   confirmPassword: "required|string",
-  type: "required|string",
+  type: "required",
   skills: "array",
   desc: "string",
   acceptedJobs: "array",
