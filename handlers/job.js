@@ -21,7 +21,12 @@ const createJobs = async (req, res) => {
 
 const getJobsById = async (req, res) => {
   try {
-    const job = await getJobById(id).populate('companyId', 'name', 'mentor', 'company');
+    const job = await getJobById(id).populate(
+      "companyId",
+      "name",
+      "mentor",
+      "company"
+    );
     res.status(200).send(job);
   } catch (err) {
     console.log(err);
@@ -86,8 +91,8 @@ const applyToJob = async (req, res) => {
 };
 
 const offerJob = async (req, res) => {
-  console.log("Offer Job >>>>>>>");
-  console.log("Request Body:", req.body);
+  // console.log("Offer Job >>>>>>>");
+  // console.log("Request Body:", req.body);
 
   try {
     const data = {

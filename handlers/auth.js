@@ -12,7 +12,7 @@ const {
   Account,
   // getMentors,
 } = require("../pkg/account");
-console.log(Account);
+// console.log(Account);
 const {
   validate,
   AccountLogin,
@@ -20,10 +20,11 @@ const {
   AccountReset,
 } = require("../pkg/account/validate");
 
+const { Job } = require("../pkg/Job/index");
+
 const { getSection } = require("../pkg/config");
 
 const login = async (req, res) => {
-  // koga se logirame ni se vrakja nov token
   try {
     // await validate(req.body, AccountLogin);
     const { email, password } = req.body;
@@ -46,7 +47,7 @@ const login = async (req, res) => {
     };
     console.log("test before token");
     const token = jwt.sign(payload, getSection("development").jwt_secret);
-    return res.status(200).send({ token }); // req.auth
+    return res.status(200).send({ token });
   } catch (err) {
     res.status(500).send("Internal Server Error");
   }
@@ -55,21 +56,28 @@ const login = async (req, res) => {
 const register = async (req, res) => {
   try {
     console.log("Received data:", req.body);
-    const { email, password, confirmPassword, name, type, skills, phone, desc, representative, address } = req.body;
+    const {
+      email,
+      password,
+      confirmPassword,
+      name,
+      type,
+      skills,
+      phone,
+      desc,
+      representative,
+      address,
+    } = req.body;
     await validate(req.body, AccountRegister);
-    // console.log("Received data:", req.body);
-    // console.log("Missing fields:", {
-    //   email: !email,
-    //   password: !password,
-    //   name: !name,
-    //   type: !type,
-    //   skills: !skills,
-    //   phone: !phone,
-    //   desc: !desc
-    // });
-    
+
     if (!email || !password || !confirmPassword || !name || !type) {
-      console.log("Missing basic fields:", { email, password, confirmPassword, name, type });
+      console.log("Missing basic fields:", {
+        email,
+        password,
+        confirmPassword,
+        name,
+        type,
+      });
       return res.status(400).send("All fields are required!");
     }
 
@@ -92,8 +100,8 @@ const register = async (req, res) => {
         .status(400)
         .send("Confirm password is not the same as password!");
     }
-    req.body.password = bcrypt.hashSync(password); // password-ot e sifriran i e nerazbirliv za nas lugjeto
-    
+    req.body.password = bcrypt.hashSync(password);
+
     const acc = await create(req.body);
     return res.status(201).send(acc);
   } catch (err) {
@@ -103,10 +111,8 @@ const register = async (req, res) => {
 };
 
 const refreshToken = async (req, res) => {
-  // koga pravime refresh na token na veke najaven korisnik ni se vrakja nov token so novo vazecko istekuvanje
-  // req.auth postoi koga prethodno se generiral veke token
   const payload = {
-    ...req.auth, // ova e nasiot korisnik koj prethodno bil najaven i probuva da go osvezi negoviot token
+    ...req.auth,
     exp: new Date().getTime() / 1000 + 7 * 24 * 60 * 60, // 7 dena vo idnina
   };
 
@@ -120,7 +126,7 @@ const resetPassword = async (req, res) => {
 
   const account = await getByEmail(email);
 
-  console.log("account data", account);
+  // console.log("account data", account);
 
   if (!account) {
     return res.status(400).send("Account with this email does not exist!");
@@ -131,19 +137,17 @@ const resetPassword = async (req, res) => {
     return res.status(400).send("Incorrect old password!");
   }
 
-  // Stariot password nemoze da bide kako noviot password
   if (newPassword === oldPassword) {
     return res.status(400).send("New password cannot be old password!");
   }
 
-  // sifriraj go noviot password pred da go zapises vo databazata
   const newPasswordHashed = bcrypt.hashSync(newPassword);
 
   const userPasswordChanged = await setNewPassword(
     account._id.toString(),
     newPasswordHashed
   );
-  console.log("userPass", userPasswordChanged);
+  // console.log("userPass", userPasswordChanged);
 
   return res.status(200).send(userPasswordChanged);
 };
@@ -173,31 +177,10 @@ const getOneUser = async (req, res) => {
     if (!account) {
       return res.status(404).send("User not found!");
     }
-
     res.status(200).send(account);
   } catch (err) {
     res.status(500).send("Internal Server Error");
   }
-  // try {
-  //   const userId = req.params.id;
-  //   if (!mongoose.Types.ObjectId.isValid(userId)) {
-  //     console.log("Invalid user ID:", userId);
-  //     return res.status(400).send("Invalid user ID");
-  //   }
-
-  //   console.log(`Fetching user with ID: ${userId}`);
-  //   const account = await getById(userId);
-  //   if (!account) {
-  //     console.log("User not found with ID:", userId);
-  //     return res.status(404).send("User not found!");
-  //   }
-
-  //   console.log("User found:", account);
-  //   res.status(200).send(account);
-  // } catch (err) {
-  //   console.error("Internal Server Error:", err);
-  //   res.status(500).send("Internal Server Error");
-  // }
 };
 
 const getAllUsers = async (req, res) => {
@@ -270,49 +253,33 @@ const deleteAccount = async (req, res) => {
   }
 };
 
-const getCompanyAccomplishments = async (req, res) => {
+const getStatistics = async (req, res) => {
+  const userId = req.params.id;
+  // console.log(Job);
   try {
-    const currentDate = new Date();
-    const oneYearAgo = new Date(currentDate);
-    oneYearAgo.setFullYear(currentDate.getFullYear() - 1);
+    const jobs = await Job.find({ companyId: userId });
 
-    // Find jobs that were finished in the last year by this company
-    const finishedJobs = await Job.find({
-      companyId: req.user.id, 
-      status: "finished", 
-      finishedDate: { $gte: oneYearAgo, $lte: currentDate },
-    });
+    //total assigned jobs
+    const totalAssignedJobs = jobs.length;
 
+    //finished jobs
+    const finishedJobs = jobs.filter((job) => job.finishedDate).length;
 
-    const finishedJobsCount = finishedJobs.length;
+    //statistics data
+    const statisticsData = {
+      totalAssignedJobs,
+      finishedJobs,
+      jobs: jobs.map((job) => ({
+        title: job.title,
+        status: job.status,
+        finishedDate: job.finishedDate,
+      })),
+    };
 
-    res.status(200).json({
-      totalFinishedJobs: finishedJobsCount,
-      finishedJobs: finishedJobs,
-    });
+    res.status(200).json(statisticsData);
   } catch (err) {
-    console.error("Error fetching company accomplishments:", err);
+    console.error(err);
     res.status(500).json({ message: "Internal Server Error" });
-  }
-};
-
-const getMentorAccomplishments = async (req, res) => {
-   try {
-    const mentorAccomplishments = await Account.findOne(
-      { _id: req.user.id, type: "mentor" },
-      "mentorAccomplishments"
-    );
-
-    if (!mentorAccomplishments) {
-      return res
-        .status(404)
-        .json({ message: "Mentor accomplishments not found" });
-    }
-
-    res.status(200).json(mentorAccomplishments.mentorAccomplishments);
-  } catch (err) {
-    console.error("Error fetching mentor accomplishments:", err); // Log the error
-    res.status(500).json({ message: "Internal Server Error", error: err.message }); // Send error details
   }
 };
 
@@ -321,19 +288,23 @@ const getBestPerformingMentors = async (rew, res) => {
     const oneMonthAgo = new Date();
     oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
 
-    const mentors = await getAll({
-      type: "mentor",
-      "mentorAccomplishments.completedJobs": { $gt: 0 },
-      updatedAt: { $gte: oneMonthAgo },
-    });
-    const sortedMentors = mentors
+    const mentors = await Account.find({ type: "mentor" });
+
+    //based on completed jobs from the last month
+    const bestMentors = mentors
       .map((mentor) => ({
-        ...mentor.toObject(),
-        completedJobs: mentor.mentorAccomplishments.completedJobs,
+        name: mentor.name,
+        completedJobs: mentor.mentorAccomplishments?.completedJobs || 0,
+        photo: mentor.photo || null,
+        updatedAt: mentor.updatedAt,
       }))
+      .filter(
+        (mentor) => mentor.updatedAt >= oneMonthAgo && mentor.completedJobs > 0
+      )
       .sort((a, b) => b.completedJobs - a.completedJobs)
       .slice(0, 3);
-    res.status(200).json(sortedMentors);
+
+    res.status(200).json(bestMentors);
   } catch (error) {
     console.error(" Error fetching best performing mentors", error);
     res.status(500).json({ message: "internal server Error" });
@@ -353,7 +324,6 @@ module.exports = {
   deleteAccount,
   getAllMentors,
   getAllCompanies,
-  getMentorAccomplishments,
-  getCompanyAccomplishments,
+  getStatistics,
   getBestPerformingMentors,
 };
