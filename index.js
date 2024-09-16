@@ -82,29 +82,28 @@ app.post("/api/jobs/apply/:id", async (req, res) => {
   }
 });
 
-app.post("/api/auth/login", login); //raboti
-app.post("/api/auth/register", register); //raboti
+app.post("/api/auth/login", login);
+app.post("/api/auth/register", register);
 // console.log("Received DATA", req.body);
 app.get("/api/auth/refresh-token", refreshToken);
-app.post("/api/auth/reset-password", resetPassword); //raboti
-app.post("/api/forgot-password", forgotPassword); //raboti
-app.post("/api/users", createUser); //raboti
-app.get("/api/users/:id", getOneUser); //raboti
-app.get("/api/users", getAllUsers); //raboti
+app.post("/api/auth/reset-password", resetPassword);
+app.post("/api/forgot-password", forgotPassword);
+app.post("/api/users", createUser);
+app.get("/api/users/:id", getOneUser);
+app.get("/api/users", getAllUsers);
 app.put("/api/auth/:id", updateAccount);
-// app.get("/api/mentors", getAllMentors);
 
-app.post("/api/jobs", createJobs); //raboti
-app.get("/api/jobs", getAll); //raboti
-app.get("/api/jobs/:id", getJobsById); //raboti
-app.put("/api/jobs/:id", updateJobs); // raboti
-app.delete("/api/jobs/:id", removeJobs); //ne raboti
+app.post("/api/jobs", createJobs);
+app.get("/api/jobs", getAll);
+app.get("/api/jobs/:id", getJobsById);
+app.put("/api/jobs/:id", updateJobs);
+app.delete("/api/jobs/:id", removeJobs);
 
-app.post("/api/jobapplications", createJobApplication); //raboti
-app.get("/api/jobapplications", getAllJobApplications); //raboti
-app.get("/api/jobapplication/:id", getOneJobApplication); //raboti
-app.put("/api/jobapplications/:id", updateJobApplication); //raboti
-app.delete("/api/jobapplication/:id", removeJobApplication); //raboti
+app.post("/api/jobapplications", createJobApplication);
+app.get("/api/jobapplications", getAllJobApplications);
+app.get("/api/jobapplication/:id", getOneJobApplication);
+app.put("/api/jobapplications/:id", updateJobApplication);
+app.delete("/api/jobapplication/:id", removeJobApplication);
 
 app.get("/api/mentors", getAllMentors);
 app.get("/api/companies", getAllCompanies);
