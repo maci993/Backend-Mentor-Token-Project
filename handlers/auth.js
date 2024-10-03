@@ -1,5 +1,13 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const config = require("../pkg/config");
+const account = require("../pkg/account");
+// const { Account } = require("../pkg/account/validate");
+const { Account } = require("../pkg/account/index.js");
+const { sendMail } = require("../pkg/mailer");
+// const nodemailer = require("../pkg/config/nodemailer");
+const crypto = require("crypto");
+const mailer = require('../pkg/mailer');
 
 const {
   create,
@@ -9,7 +17,6 @@ const {
   update,
   remove,
   getById,
-  Account,
   // getMentors,
 } = require("../pkg/account");
 // console.log(Account);
@@ -46,7 +53,7 @@ const login = async (req, res) => {
       // exp: new Date().getTime() / 1000 + 7 * 24 * 60 * 60, // 7 dena vo idnina
     };
     console.log("test before token");
-    const token = jwt.sign(payload, getSection("development").jwt_secret);
+    const token = jwt.sign(payload, getSection("development").jwt_secret, { expiresIn: '1h' });
     return res.status(200).send({ token });
   } catch (err) {
     res.status(500).send("Internal Server Error");
@@ -67,6 +74,7 @@ const register = async (req, res) => {
       desc,
       representative,
       address,
+      profilePicture,
     } = req.body;
     await validate(req.body, AccountRegister);
 
@@ -100,10 +108,33 @@ const register = async (req, res) => {
         .status(400)
         .send("Confirm password is not the same as password!");
     }
-    req.body.password = bcrypt.hashSync(password);
 
-    const acc = await create(req.body);
-    return res.status(201).send(acc);
+    const hashedPassword = bcrypt.hashSync(password, 10);// broj na iteracii vo procesot na hasiranje
+    req.body.password = hashedPassword;  
+
+    const userData = {
+      email,
+      password: hashedPassword,
+      name,
+      type,
+      skills,
+      phone,
+      desc,
+      representative,
+      address,
+      profilePicture: profilePicture || null, 
+    };
+
+    const acc = await create(userData);
+
+    const payload = { id: acc._id, email: acc.email, type: acc.type };
+    const token = jwt.sign(payload, getSection('development').jwt_secret, { expiresIn: '1h' });
+
+    return res.status(201).json({ 
+      message: 'Registration successful', 
+      user: acc,
+      token: token, 
+    });
   } catch (err) {
     console.log(err);
     return res.status(err.status).send(err.error);
@@ -117,49 +148,91 @@ const refreshToken = async (req, res) => {
   };
 
   const token = jwt.sign(payload, getSection("development").jwt_secret);
-  return res.status(200).send({ token }); // req.auth
-};
-
-const resetPassword = async (req, res) => {
-  await validate(req.body, AccountReset);
-  const { newPassword, oldPassword, email } = req.body;
-
-  const account = await getByEmail(email);
-
-  // console.log("account data", account);
-
-  if (!account) {
-    return res.status(400).send("Account with this email does not exist!");
-  }
-
-  // Incorrect old password
-  if (!bcrypt.compareSync(oldPassword, account.password)) {
-    return res.status(400).send("Incorrect old password!");
-  }
-
-  if (newPassword === oldPassword) {
-    return res.status(400).send("New password cannot be old password!");
-  }
-
-  const newPasswordHashed = bcrypt.hashSync(newPassword);
-
-  const userPasswordChanged = await setNewPassword(
-    account._id.toString(),
-    newPasswordHashed
-  );
-  // console.log("userPass", userPasswordChanged);
-
-  return res.status(200).send(userPasswordChanged);
+  return res.status(200).send({ token });
 };
 
 const forgotPassword = async (req, res) => {
-  // korisnikot dali postoi vo nasata databaza, go barame istiot po email
-  const exists = await getByEmail(req.body.email);
-  if (!exists) {
-    return res.status(400).send("Account with this email does not exist!");
+  const { email } = req.body;
+
+  const user = await account.getByEmail(email);
+
+  if (!user) {
+    return res.status(400).send("User not registered!");
   }
 
-  res.send("OK");
+  // header, payload, signature
+
+  const secret = config.getSection("development").jwt_secret;
+  const payload = {
+    email: user.email,
+    id: user.id,
+  };
+
+  const token = jwt.sign(payload, secret, { expiresIn: "30m" });
+  // /reset-password/:id/:token
+  const link = `http://localhost:5173/reset-password/${user.id}/${token}`;
+  console.log("link", link);
+
+  try {
+    await sendMail(user.email, "PASSWORD_RESET", { user, link });
+    return res.status(200).send("Password reset link has been sent to your email...");
+  } catch (err) {
+    console.log(">>>>", err);
+    return res.status(500).send("Message not sent!");
+  }
+};
+
+
+const resetPassTemplate = async (req, res) => {
+  // `http://localhost:10000/reset-password/${user.id}/${token}`;
+  const { id, token } = req.params;
+  const user = await account.getById(id);
+
+  if (!user) {
+    return res.status(400).send("User not registered!");
+  }
+
+  const secret = config.getSection("development").jwt_key;
+
+  try {
+    const payload = jwt.verify(token, secret);
+    if (!payload) {
+      res.send("Token not valid!");
+    }
+    res.render("reset-password", { email: user.email });
+  } catch (err) {
+    return res.status(500).send("Message not sent!");
+  }
+};
+
+const resetPassword = async (req, res) => {
+  const { id, token } = req.params;
+  const { password, confirmPass } = req.body;
+
+  if (password !== confirmPass) {
+    return res.status(400).send("Passwords do not match!");
+  }
+
+  const hashedPass = bcrypt.hashSync(password);
+
+  const user = await account.getById(id);
+  if (!user) {
+    return res.status(400).send("User not registered!");
+  }
+
+  const secret = config.getSection("development").jwt_secret;
+console.log("SECRET", secret);
+  try {
+    const payload = jwt.verify(token, secret);
+    if (!payload) {
+      res.send("Token not valid!");
+    }
+console.log("PASSWORD!!!", password);
+    await account.setNewPassword(user.id, hashedPass);
+    res.status(200).send("Password reset successfully!");
+  } catch (err) {
+    return res.status(500).send("Message not sent!");
+  }
 };
 
 const createUser = async (req, res) => {
@@ -185,11 +258,12 @@ const getOneUser = async (req, res) => {
 
 const getAllUsers = async (req, res) => {
   try {
-    const { type } = req.query;
-    let filter = {};
+    const { type } = req.query; //proveruva dali ima parametar type
+    let filter = {}; // prazen objekt kako kriterium za filtriranje podatoci od DB
 
     if (type) {
-      filter.type = type;
+      filter.type = type; //aко type = "mentor", togas оbjektot filter ke stane { type: "mentor" }
+      
     }
     const account = await getAll(filter);
     res.status(200).send(account);
@@ -241,6 +315,7 @@ const updateAccount = async (req, res) => {
     res.status(500).send("Internal Server Error");
   }
 };
+
 const deleteAccount = async (req, res) => {
   try {
     const account = await remove(req.params.id);
@@ -275,7 +350,6 @@ const getStatistics = async (req, res) => {
         finishedDate: job.finishedDate,
       })),
     };
-
     res.status(200).json(statisticsData);
   } catch (err) {
     console.error(err);
@@ -291,8 +365,7 @@ const getBestPerformingMentors = async (rew, res) => {
     const mentors = await Account.find({ type: "mentor" });
 
     //based on completed jobs from the last month
-    const bestMentors = mentors
-      .map((mentor) => ({
+    const bestMentors = mentors.map((mentor) => ({
         name: mentor.name,
         completedJobs: mentor.mentorAccomplishments?.completedJobs || 0,
         photo: mentor.photo || null,
@@ -316,6 +389,7 @@ module.exports = {
   register,
   resetPassword,
   forgotPassword,
+  resetPassTemplate,
   refreshToken,
   createUser,
   getOneUser,

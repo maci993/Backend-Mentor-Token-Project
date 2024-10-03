@@ -72,6 +72,10 @@ const accountSchema = mongoose.Schema(
       totalJobsPosted: { type: Number, default: 0 },
       successfulMentorEngagements: { type: Number, default: 0 },
     },
+    profilePicture: {
+      type: String,  
+      required: false,
+    },
   },
   { timestamps: true }
 );

@@ -51,7 +51,7 @@ const createApplication = async (data) => {
   console.log("Creating job application with data:", data);
 
   const application = new Application(data);
-  // console.log('Application instance created:', application);
+  // console.log("Application created:", application);
   return await application.save();
 };
 

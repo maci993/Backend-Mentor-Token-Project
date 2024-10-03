@@ -41,9 +41,7 @@ const getAllJobApplications = async (req, res) => {
     const applications = await getAllApplications();
     res.status(200).json(applications);
   } catch (err) {
-    res
-      .status(500)
-      .json({ message: "Error retrieving applications", error: err });
+    res.status(500).json({ message: "Error retrieving applications", error: err });
   }
 };
 

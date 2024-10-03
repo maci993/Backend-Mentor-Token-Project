@@ -91,9 +91,7 @@ const applyToJob = async (req, res) => {
 };
 
 const offerJob = async (req, res) => {
-  // console.log("Offer Job >>>>>>>");
   // console.log("Request Body:", req.body);
-
   try {
     const data = {
       companyId: req.auth.id,
@@ -123,8 +121,8 @@ const offerJob = async (req, res) => {
 
 const updateJobStatus = async (req, res) => {
   try {
-    const { jobId } = req.params;
-    const { status } = req.body;
+    const jobId = req.params;
+    const status = req.body;
 
     const updatedJob = await updateJob(jobId, { status });
 

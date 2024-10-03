@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const { expressjwt: jwt } = require("express-jwt");
 const { getSection } = require("./pkg/config");
+const fileUpload = require('express-fileupload');
 require("dotenv").config();
 
 const {
@@ -44,13 +45,28 @@ const {
   getMentorStatistics,
 } = require("./handlers/overviewHandler");
 
+const {
+  sendMessage,
+  sendWelcomeMail,
+  sendPasswordResetMail,
+} = require("./handlers/mailer");
+
+const {
+  upload,
+  removeFiles,
+} = require("./handlers/storage")
+
 require("./pkg/db");
 
 const app = express();
 
 // middlewares
 app.use(cors());
+app.set("view engine", "ejs");
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(fileUpload());
+app.use('/uploads', express.static(__dirname + '/uploads'));
 app.use(
   jwt({
     secret: getSection("development").jwt_secret,
@@ -62,49 +78,45 @@ app.use(
       "/api/auth/register",
       "/api/auth/forgot-password",
       "/api/auth/reset-password",
+      "/api/auth/reset-password/:id/:token",
       "/api/best-performing-mentors",
+      "/api/upload"
     ],
   })
 );
 
-app.post("/api/jobs/apply/:id", async (req, res) => {
-  console.log("Request params:", req.params);
-  const jobId = req.params.id;
-
-  try {
-    const application = await createJobApplication(jobId);
-    res
-      .status(200)
-      .json({ message: "Application submitted successfully", application });
-  } catch (error) {
-    console.error("Error applying to job:", error);
-    res.status(500).json({ message: "Internal Server Error" });
-  }
-});
-
+// user routes-authentication
 app.post("/api/auth/login", login);
 app.post("/api/auth/register", register);
 // console.log("Received DATA", req.body);
 app.get("/api/auth/refresh-token", refreshToken);
-app.post("/api/auth/reset-password", resetPassword);
-app.post("/api/forgot-password", forgotPassword);
+app.post("/api/auth/reset-password/:id/:token", resetPassword);
+app.post("/api/auth/forgot-password", forgotPassword);
 app.post("/api/users", createUser);
 app.get("/api/users/:id", getOneUser);
 app.get("/api/users", getAllUsers);
 app.put("/api/auth/:id", updateAccount);
 
+//mailer routes
+app.post("/api/sendmessage", sendMessage);
+app.post("/api/sendmail", sendWelcomeMail);
+app.post("/api/reset-pass", sendPasswordResetMail);
+
+//job routes
 app.post("/api/jobs", createJobs);
 app.get("/api/jobs", getAll);
 app.get("/api/jobs/:id", getJobsById);
 app.put("/api/jobs/:id", updateJobs);
 app.delete("/api/jobs/:id", removeJobs);
 
+// job application routes
 app.post("/api/jobapplications", createJobApplication);
 app.get("/api/jobapplications", getAllJobApplications);
 app.get("/api/jobapplication/:id", getOneJobApplication);
 app.put("/api/jobapplications/:id", updateJobApplication);
 app.delete("/api/jobapplication/:id", removeJobApplication);
 
+//
 app.get("/api/mentors", getAllMentors);
 app.get("/api/companies", getAllCompanies);
 app.get("/api/statistics/:id", getStatistics);
@@ -113,8 +125,13 @@ app.post("/api/offer-job", offerJob);
 app.delete("/api/jobs/:id", deleteJobOffer);
 app.put("/api/jobs/:jobId", updateJobStatus);
 
+//quick overview routes
 app.get("/api/overview-stats", getStartupStatistics);
 app.get("/api/overview-stats-mentors", getMentorStatistics);
+
+//routes for upload and delete photos
+app.post("/api/upload", upload);
+app.delete("/api/files/:fileName", removeFiles);
 
 app.listen(getSection("development").port, () => {
   console.log(`Server started at port ${getSection("development").port}`);
