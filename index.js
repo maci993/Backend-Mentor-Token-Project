@@ -88,7 +88,6 @@ app.use(
 // user routes-authentication
 app.post("/api/auth/login", login);
 app.post("/api/auth/register", register);
-// console.log("Received DATA", req.body);
 app.get("/api/auth/refresh-token", refreshToken);
 app.post("/api/auth/reset-password/:id/:token", resetPassword);
 app.post("/api/auth/forgot-password", forgotPassword);
